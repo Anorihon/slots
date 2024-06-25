@@ -20,7 +20,8 @@ class Button extends Container {
         this.updateView()
 
         this._view.eventMode = 'static'
-        this._view.on('click', this.onClick.bind(this))
+        // this._view.on('click', this.onClick.bind(this))
+        this._view.on('pointerup', this.onClick.bind(this))
 
         this._textNode.text = label
         this._textNode.style = NORMAL_TEXT_STYLE
