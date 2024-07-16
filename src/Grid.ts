@@ -1,4 +1,4 @@
-import { Container, Graphics } from 'pixi.js'
+import { Container, Graphics, Ticker } from 'pixi.js'
 import Slot from './Slot.ts'
 import { ESlotElement, SLOT_SIZE, WIN_PATTERNS } from './constants.ts'
 import { IWinPattern } from './interfaces.ts'
@@ -24,6 +24,8 @@ class Grid extends Container {
 
     private _slotsContainer: Container = new Container()
     private _highlightGraphics: Graphics = new Graphics()
+    private _ticker: Ticker = new Ticker()
+    private _animationDuration: number = 250 // Duration of the spin animation in milliseconds
 
     constructor() {
         super()
@@ -54,19 +56,48 @@ class Grid extends Container {
         }
     }
 
-    fillGrid(withoutMatch: boolean = false) {
-        for (const slot of this.slots) {
-            slot.element.slotType = this.getRandomElementByProbability(PROBABILITIES)
-        }
+    /**
+     * Animates the slots by cycling through random elements for a duration.
+     * @returns Promise that resolves when the animation is complete.
+     */
+    async animateSlots(): Promise<void> {
+        return new Promise((resolve) => {
+            const startTime = Date.now()
 
-        if (!withoutMatch) return
+            const update = () => {
+                const elapsedTime = Date.now() - startTime
 
-        const matches = this.getMatches()
+                for (const slot of this.slots) {
+                    slot.element.slotType = this.getRandomElementByProbability(PROBABILITIES)
+                }
 
-        if (matches.length > 0) {
-            console.warn('Re-roll fill grid because of match')
-            this.fillGrid()
-        }
+                if (elapsedTime >= this._animationDuration) {
+                    this._ticker.remove(update)
+                    this._ticker.stop()
+                    resolve()
+                }
+            }
+
+            this._ticker.add(update)
+            this._ticker.start()
+        })
+    }
+
+    async fillGrid(withoutMatch: boolean = false): Promise<void> {
+        return this.animateSlots().then(() => {
+            for (const slot of this.slots) {
+                slot.element.slotType = this.getRandomElementByProbability(PROBABILITIES);
+            }
+
+            if (!withoutMatch) return;
+
+            const matches = this.getMatches();
+
+            if (matches.length > 0) {
+                console.warn('Re-roll fill grid because of match');
+                this.fillGrid();
+            }
+        });
     }
 
     getRandomElementByProbability(probabilities: ElementProbability[]): ESlotElement {

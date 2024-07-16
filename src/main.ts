@@ -95,21 +95,28 @@ import { IWinPattern } from './interfaces.ts'
     app.stage.addChild(hero)
 
     // Add Spin button
-    const btn = new Button('Spin', () => {
-        grid.fillGrid()
+    const spinBtn = new Button('Spin', async () => {
+        grid.clearHighlight()
+        spinBtn.disabled = true
+
+        await grid.fillGrid()
 
         const matches = grid.getMatches()
         grid.highlightMatches(matches)
 
-        if (matches.length === 0) return
+        if (matches.length === 0) {
+            spinBtn.disabled = false
+
+            return
+        }
 
         console.log('Matches', matches)
-        btn.disabled = true
+
         playMatchAnimations(matches)
     })
-    btn.x = app.screen.width / 2 + SLOT_SIZE * 1.5
-    btn.y = app.screen.height / 2
-    app.stage.addChild(btn)
+    spinBtn.x = app.screen.width / 2 + SLOT_SIZE * 1.5
+    spinBtn.y = app.screen.height / 2
+    app.stage.addChild(spinBtn)
 
 
     function playMatchAnimations(matches: Array<IWinPattern>) {
@@ -119,7 +126,7 @@ import { IWinPattern } from './interfaces.ts'
             if (currentMatch >= matches.length) {
                 hero.playAnimation('Idle')
                 enemy.playAnimation('Idle')
-                btn.disabled = false
+                spinBtn.disabled = false
                 return
             }
 
